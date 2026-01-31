@@ -15,6 +15,7 @@ type CreateFormData = {
     vehicle_number: string;
     slot: string;
     level: string;
+    due_date: string;
 };
 
 const CreateItemScreen = () => {
@@ -28,6 +29,7 @@ const CreateItemScreen = () => {
         vehicle_number: '',
         slot: '',
         level: '',
+        due_date: '',
     });
 
     const updateField = (key: keyof CreateFormData, value: string) => {
@@ -38,6 +40,15 @@ const CreateItemScreen = () => {
         if (!formData.title || !formData.vehicle_number) {
             Alert.alert("Missing Fields", "Topic and Assigned To are required.");
             return;
+        }
+
+        // Basic date validation (YYYY-MM-DD)
+        if (formData.due_date) {
+            const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+            if (!dateRegex.test(formData.due_date)) {
+                Alert.alert("Invalid Date", "Please use YYYY-MM-DD format.");
+                return;
+            }
         }
 
         setLoading(true);
@@ -100,6 +111,19 @@ const CreateItemScreen = () => {
                             placeholderTextColor="#ccc"
                             value={formData.vehicle_number}
                             onChangeText={(t) => updateField('vehicle_number', t)}
+                        />
+                    </View>
+
+                    <View style={styles.inputGroup}>
+                        <Text style={styles.label}>Due Date (YYYY-MM-DD)</Text>
+                        <TextInput
+                            style={styles.input}
+                            placeholder="e.g. 2026-12-31"
+                            placeholderTextColor="#ccc"
+                            value={formData.due_date}
+                            onChangeText={(t) => updateField('due_date', t)}
+                            keyboardType="numbers-and-punctuation"
+                            maxLength={10}
                         />
                     </View>
 

@@ -6,6 +6,7 @@ export interface Item {
     slot: string;
     level: string;
     entry_time: string;
+    due_date?: string; // Optional field
     status: 'active' | 'completed';
 }
 

@@ -6,6 +6,7 @@ import axios from 'axios';
 import { Item, RootStackParamList } from '../types';
 import { COLORS, SHADOWS } from '../constants/theme';
 import { Ionicons } from '@expo/vector-icons';
+import AnalyticsCard from '../components/AnalyticsCard';
 
 // API URL - Using 10.0.2.2 for Android Emulator to access localhost
 const API_URL = 'http://10.0.2.2:5000/items';
@@ -50,10 +51,14 @@ const HomeScreen = () => {
         fetchItems();
     };
 
+    // Analytics Stats
+    const totalTasks = items.length;
+    const pendingTasks = items.filter(i => i.status === 'active').length; // Assuming active = pending
+    const completedTasks = items.filter(i => i.status === 'completed').length;
+
     const getFilteredItems = () => {
         let filtered = items;
 
-        // 1. Text Search Filter
         if (searchQuery) {
             const lowerQuery = searchQuery.toLowerCase();
             filtered = filtered.filter(item =>
@@ -62,7 +67,6 @@ const HomeScreen = () => {
             );
         }
 
-        // 2. Tab Filter
         if (activeFilter === "All Tasks") return filtered;
         if (activeFilter === "Done") return filtered.filter(i => i.status === "completed");
         if (activeFilter === "In Progress") return filtered.filter(i => i.status === "active");
@@ -75,6 +79,10 @@ const HomeScreen = () => {
         const isCompleted = item.status === 'completed';
         const badgeStyle = isCompleted ? COLORS.badge.done : COLORS.badge.inProgress;
         const statusText = isCompleted ? "Done" : "In Progress";
+
+        const formattedDate = item.due_date
+            ? `Due: ${new Date(item.due_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`
+            : new Date(item.entry_time).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 
         return (
             <TouchableOpacity
@@ -100,8 +108,8 @@ const HomeScreen = () => {
                 <View style={styles.cardFooter}>
                     <View style={styles.dateContainer}>
                         <Ionicons name="calendar-outline" size={16} color={COLORS.text.secondary} />
-                        <Text style={styles.dateText}>
-                            {new Date(item.entry_time).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                        <Text style={[styles.dateText, item.due_date && { color: COLORS.danger }]}>
+                            {formattedDate}
                         </Text>
                     </View>
 
@@ -133,66 +141,72 @@ const HomeScreen = () => {
                 </View>
             </View>
 
-            {/* Search Bar */}
-            <View style={styles.searchContainer}>
-                <Ionicons name="search" size={20} color="#999" style={styles.searchIcon} />
-                <TextInput
-                    style={styles.searchInput}
-                    placeholder="Search tasks..."
-                    value={searchQuery}
-                    onChangeText={setSearchQuery}
-                    placeholderTextColor="#999"
-                    clearButtonMode="while-editing"
-                />
-            </View>
+            <FlatList
+                ListHeaderComponent={
+                    <>
+                        {/* Analytics Dashboard */}
+                        <AnalyticsCard total={totalTasks} pending={pendingTasks} done={completedTasks} />
 
-            {/* Filter Tabs */}
-            <View style={styles.filterContainer}>
-                <FlatList
-                    horizontal
-                    data={FILTERS}
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={{ paddingHorizontal: 20 }}
-                    keyExtractor={item => item}
-                    renderItem={({ item }) => (
-                        <TouchableOpacity
-                            style={[
-                                styles.filterTab,
-                                activeFilter === item && styles.filterTabActive
-                            ]}
-                            onPress={() => setActiveFilter(item)}
-                        >
-                            <Text style={[
-                                styles.filterText,
-                                activeFilter === item && styles.filterTextActive
-                            ]}>{item}</Text>
-                        </TouchableOpacity>
-                    )}
-                />
-            </View>
+                        {/* Search Bar */}
+                        <View style={styles.searchContainer}>
+                            <Ionicons name="search" size={20} color="#999" style={styles.searchIcon} />
+                            <TextInput
+                                style={styles.searchInput}
+                                placeholder="Search tasks..."
+                                value={searchQuery}
+                                onChangeText={setSearchQuery}
+                                placeholderTextColor="#999"
+                                clearButtonMode="while-editing"
+                            />
+                        </View>
 
-            {loading ? (
-                <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color={COLORS.primary} />
-                </View>
-            ) : (
-                <FlatList
-                    data={getFilteredItems()}
-                    renderItem={renderItem}
-                    keyExtractor={item => item.id}
-                    contentContainerStyle={styles.listContent}
-                    keyboardShouldPersistTaps="handled"
-                    showsVerticalScrollIndicator={false}
-                    refreshControl={
-                        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />
-                    }
-                    ListEmptyComponent={
+                        {/* Filter Tabs */}
+                        <View style={styles.filterContainer}>
+                            <FlatList
+                                horizontal
+                                data={FILTERS}
+                                showsHorizontalScrollIndicator={false}
+                                contentContainerStyle={{ paddingHorizontal: 20 }}
+                                keyExtractor={item => item}
+                                renderItem={({ item }) => (
+                                    <TouchableOpacity
+                                        style={[
+                                            styles.filterTab,
+                                            activeFilter === item && styles.filterTabActive
+                                        ]}
+                                        onPress={() => setActiveFilter(item)}
+                                    >
+                                        <Text style={[
+                                            styles.filterText,
+                                            activeFilter === item && styles.filterTextActive
+                                        ]}>{item}</Text>
+                                    </TouchableOpacity>
+                                )}
+                            />
+                        </View>
+                    </>
+                }
+                data={getFilteredItems()}
+                renderItem={renderItem}
+                keyExtractor={item => item.id}
+                contentContainerStyle={styles.listContent}
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}
+                refreshControl={
+                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />
+                }
+                ListEmptyComponent={
+                    loading ? (
+                        <View style={styles.loadingContainer}>
+                            <ActivityIndicator size="large" color={COLORS.primary} />
+                        </View>
+                    ) : (
                         <View style={styles.emptyContainer}>
                             <Text style={styles.emptyText}>No filtered tasks found</Text>
                         </View>
-                    }
-                />
-            )}
+                    )
+                }
+            />
         </SafeAreaView>
     );
 };
@@ -237,7 +251,6 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         backgroundColor: '#fff',
         marginHorizontal: 20,
-        marginTop: 10,
         marginBottom: 10,
         borderRadius: 12,
         paddingHorizontal: 12,
@@ -279,19 +292,18 @@ const styles = StyleSheet.create({
         color: '#fff',
     },
     loadingContainer: {
-        flex: 1,
-        justifyContent: 'center',
+        marginTop: 50,
         alignItems: 'center',
     },
     listContent: {
-        padding: 20,
-        paddingTop: 0,
+        paddingBottom: 20,
     },
     card: {
         backgroundColor: COLORS.card,
         borderRadius: 24,
         padding: 20,
         marginBottom: 16,
+        marginHorizontal: 20,
         ...SHADOWS.card,
     },
     cardHeader: {
