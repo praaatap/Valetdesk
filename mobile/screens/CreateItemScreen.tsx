@@ -1,17 +1,26 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, ScrollView } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import axios from 'axios';
+import { RootStackParamList } from '../types';
 
 const API_URL = 'http://10.0.2.2:5000/items';
 
+type CreateFormData = {
+    title: string;
+    description: string;
+    vehicle_number: string;
+    slot: string;
+    level: string;
+};
+
 const CreateItemScreen = () => {
-    const navigation = useNavigation();
-    const [loading, setLoading] = useState(false);
-    
+    const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+    const [loading, setLoading] = useState<boolean>(false);
+
     // Form state
-    const [formData, setFormData] = useState({
+    const [formData, setFormData] = useState<CreateFormData>({
         title: '',
         description: '',
         vehicle_number: '',
@@ -19,7 +28,7 @@ const CreateItemScreen = () => {
         level: '',
     });
 
-    const updateField = (key, value) => {
+    const updateField = (key: keyof CreateFormData, value: string) => {
         setFormData(prev => ({ ...prev, [key]: value }));
     };
 
@@ -35,7 +44,6 @@ const CreateItemScreen = () => {
             if (response.data.success) {
                 Alert.alert("Success", "Ticket created successfully");
                 navigation.goBack();
-                // Ideally refresh the previous screen's list here
             } else {
                 Alert.alert("Error", response.data.error || "Failed to create ticket");
             }
@@ -118,8 +126,8 @@ const CreateItemScreen = () => {
                     />
                 </View>
 
-                <TouchableOpacity 
-                    style={[styles.submitButton, loading && styles.submitButtonDisabled]} 
+                <TouchableOpacity
+                    style={[styles.submitButton, loading && styles.submitButtonDisabled]}
                     onPress={handleSubmit}
                     disabled={loading}
                 >
