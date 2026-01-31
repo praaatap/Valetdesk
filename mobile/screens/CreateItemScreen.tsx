@@ -4,6 +4,8 @@ import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import axios from 'axios';
 import { RootStackParamList } from '../types';
+import { COLORS } from '../constants/theme';
+import { Ionicons } from '@expo/vector-icons';
 
 const API_URL = 'http://10.0.2.2:5000/items';
 
@@ -34,7 +36,7 @@ const CreateItemScreen = () => {
 
     const handleSubmit = async () => {
         if (!formData.title || !formData.vehicle_number) {
-            Alert.alert("Missing Fields", "Title and Vehicle Number are required.");
+            Alert.alert("Missing Fields", "Topic and Assigned To are required.");
             return;
         }
 
@@ -42,10 +44,10 @@ const CreateItemScreen = () => {
         try {
             const response = await axios.post(API_URL, formData);
             if (response.data.success) {
-                Alert.alert("Success", "Ticket created successfully");
+                Alert.alert("Success", "Task created successfully");
                 navigation.goBack();
             } else {
-                Alert.alert("Error", response.data.error || "Failed to create ticket");
+                Alert.alert("Error", response.data.error || "Failed to create task");
             }
         } catch (error) {
             console.error(error);
@@ -57,86 +59,101 @@ const CreateItemScreen = () => {
 
     return (
         <SafeAreaView style={styles.container}>
+            {/* Header */}
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.closeButton}>
-                    <Text style={styles.closeButtonText}>Cancel</Text>
+                <TouchableOpacity onPress={() => navigation.goBack()}>
+                    <Ionicons name="chevron-back" size={24} color={COLORS.text.primary} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>New Ticket</Text>
-                <View style={{ width: 60 }} />
             </View>
 
-            <ScrollView contentContainerStyle={styles.formContent}>
-                <View style={styles.inputGroup}>
-                    <Text style={styles.label}>TITLE / OWNER NAME</Text>
-                    <TextInput
-                        style={styles.input}
-                        placeholder="e.g. Blue Ford Mustang"
-                        placeholderTextColor="#ccc"
-                        value={formData.title}
-                        onChangeText={(t) => updateField('title', t)}
-                    />
+            <ScrollView contentContainerStyle={styles.content}>
+
+                {/* Icon Placeholder */}
+                <View style={styles.iconContainer}>
+                    <View style={styles.iconCircle}>
+                        <Ionicons name="checkbox" size={32} color={COLORS.primary} />
+                    </View>
                 </View>
 
-                <View style={styles.row}>
-                    <View style={[styles.inputGroup, styles.flexHalf]}>
-                        <Text style={styles.label}>VEHICLE PLATE</Text>
+                <Text style={styles.pageTitle}>Create New Task</Text>
+                <Text style={styles.pageSubtitle}>Enter the details below to add to the list.</Text>
+
+                {/* Form */}
+                <View style={styles.formContainer}>
+
+                    <View style={styles.inputGroup}>
+                        <Text style={styles.label}>Task Title <Text style={styles.required}>*</Text></Text>
                         <TextInput
                             style={styles.input}
-                            placeholder="MH12AB1234"
+                            placeholder="e.g., Fix navigation bug"
+                            placeholderTextColor="#ccc"
+                            value={formData.title}
+                            onChangeText={(t) => updateField('title', t)}
+                        />
+                    </View>
+
+                    <View style={styles.inputGroup}>
+                        <Text style={styles.label}>Assigned To / Vehicle <Text style={styles.required}>*</Text></Text>
+                        <TextInput
+                            style={styles.input}
+                            placeholder="e.g. Alex Johnson (or Plate No)"
                             placeholderTextColor="#ccc"
                             value={formData.vehicle_number}
                             onChangeText={(t) => updateField('vehicle_number', t)}
-                            autoCapitalize="characters"
                         />
                     </View>
-                    <View style={[styles.inputGroup, styles.flexHalf]}>
-                        <Text style={styles.label}>LEVEL</Text>
+
+                    <View style={styles.row}>
+                        <View style={[styles.inputGroup, styles.flexHalf]}>
+                            <Text style={styles.label}>Level</Text>
+                            <TextInput
+                                style={styles.input}
+                                placeholder="e.g. 2"
+                                placeholderTextColor="#ccc"
+                                value={formData.level}
+                                onChangeText={(t) => updateField('level', t)}
+                            />
+                        </View>
+                        <View style={[styles.inputGroup, styles.flexHalf]}>
+                            <Text style={styles.label}>Slot</Text>
+                            <TextInput
+                                style={styles.input}
+                                placeholder="e.g. A-12"
+                                placeholderTextColor="#ccc"
+                                value={formData.slot}
+                                onChangeText={(t) => updateField('slot', t)}
+                            />
+                        </View>
+                    </View>
+
+
+                    <View style={styles.inputGroup}>
+                        <Text style={styles.label}>Description</Text>
                         <TextInput
-                            style={styles.input}
-                            placeholder="e.g. 2"
+                            style={[styles.input, styles.textArea]}
+                            placeholder="Enter detailed description here..."
                             placeholderTextColor="#ccc"
-                            value={formData.level}
-                            onChangeText={(t) => updateField('level', t)}
-                            keyboardType="numeric"
+                            value={formData.description}
+                            onChangeText={(t) => updateField('description', t)}
+                            multiline
+                            textAlignVertical="top"
                         />
                     </View>
+
+                    <TouchableOpacity
+                        style={[styles.submitButton, loading && styles.submitButtonDisabled]}
+                        onPress={handleSubmit}
+                        disabled={loading}
+                    >
+                        {loading ? (
+                            <ActivityIndicator color="#fff" />
+                        ) : (
+                            <Text style={styles.submitButtonText}>Submit Task</Text>
+                        )}
+                    </TouchableOpacity>
+
                 </View>
 
-                <View style={styles.inputGroup}>
-                    <Text style={styles.label}>SLOT NUMBER</Text>
-                    <TextInput
-                        style={styles.input}
-                        placeholder="e.g. A-42"
-                        placeholderTextColor="#ccc"
-                        value={formData.slot}
-                        onChangeText={(t) => updateField('slot', t)}
-                    />
-                </View>
-
-                <View style={styles.inputGroup}>
-                    <Text style={styles.label}>DESCRIPTION / NOTES</Text>
-                    <TextInput
-                        style={[styles.input, styles.textArea]}
-                        placeholder="Add any parking notes here..."
-                        placeholderTextColor="#ccc"
-                        value={formData.description}
-                        onChangeText={(t) => updateField('description', t)}
-                        multiline
-                        numberOfLines={4}
-                    />
-                </View>
-
-                <TouchableOpacity
-                    style={[styles.submitButton, loading && styles.submitButtonDisabled]}
-                    onPress={handleSubmit}
-                    disabled={loading}
-                >
-                    {loading ? (
-                        <ActivityIndicator color="#fff" />
-                    ) : (
-                        <Text style={styles.submitButtonText}>Create Ticket</Text>
-                    )}
-                </TouchableOpacity>
             </ScrollView>
         </SafeAreaView>
     );
@@ -145,54 +162,73 @@ const CreateItemScreen = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#fff',
+        backgroundColor: '#F9FAFB', // Light gray background
     },
     header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
         paddingHorizontal: 20,
-        paddingVertical: 16,
-        borderBottomWidth: 1,
-        borderBottomColor: '#f0f0f0',
+        paddingVertical: 10,
     },
-    closeButton: {
-        paddingVertical: 8,
+    content: {
+        paddingBottom: 40,
     },
-    closeButtonText: {
-        fontSize: 16,
-        color: '#666',
+    iconContainer: {
+        alignItems: 'center',
+        marginBottom: 16,
     },
-    headerTitle: {
-        fontSize: 18,
-        fontWeight: '600',
+    iconCircle: {
+        width: 64,
+        height: 64,
+        borderRadius: 20,
+        backgroundColor: '#E3F2FD',
+        justifyContent: 'center',
+        alignItems: 'center',
     },
-    formContent: {
-        padding: 24,
+    pageTitle: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        textAlign: 'center',
+        color: COLORS.text.primary,
+        marginBottom: 8,
+    },
+    pageSubtitle: {
+        fontSize: 14,
+        textAlign: 'center',
+        color: COLORS.text.secondary,
+        marginBottom: 32,
+    },
+    formContainer: {
+        paddingHorizontal: 24,
     },
     inputGroup: {
-        marginBottom: 24,
+        marginBottom: 20,
     },
     label: {
-        fontSize: 12,
+        fontSize: 14,
         fontWeight: '700',
-        color: '#888',
+        color: '#333',
         marginBottom: 8,
-        letterSpacing: 0.5,
+    },
+    required: {
+        color: COLORS.danger,
     },
     input: {
+        backgroundColor: '#fff',
         borderWidth: 1,
-        borderColor: '#e0e0e0',
+        borderColor: '#E5E5E5',
         borderRadius: 12,
         paddingHorizontal: 16,
         paddingVertical: 14,
         fontSize: 16,
-        color: '#1a1a1a',
-        backgroundColor: '#fafafa',
+        color: COLORS.text.primary,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.02,
+        shadowRadius: 4,
+        elevation: 1,
     },
     textArea: {
-        height: 100,
-        textAlignVertical: 'top',
+        height: 120,
+        paddingTop: 14,
     },
     row: {
         flexDirection: 'row',
@@ -202,24 +238,25 @@ const styles = StyleSheet.create({
         width: '48%',
     },
     submitButton: {
-        backgroundColor: '#007bff',
-        borderRadius: 14,
+        backgroundColor: COLORS.primary,
+        borderRadius: 12,
         paddingVertical: 16,
         alignItems: 'center',
         marginTop: 10,
-        shadowColor: '#007bff',
+        shadowColor: COLORS.primary,
         shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.2,
-        shadowRadius: 8,
-        elevation: 4,
+        shadowOpacity: 0.3,
+        shadowRadius: 10,
+        elevation: 5,
     },
     submitButtonDisabled: {
-        backgroundColor: '#a0cfff',
+        backgroundColor: '#A0CFFF',
+        shadowOpacity: 0,
     },
     submitButtonText: {
         color: '#fff',
-        fontSize: 18,
-        fontWeight: '600',
+        fontSize: 16,
+        fontWeight: '700',
     },
 });
 

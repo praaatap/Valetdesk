@@ -1,18 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, StatusBar, RefreshControl, ListRenderItem } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, StatusBar, RefreshControl, ListRenderItem, Image } from 'react-native';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import axios from 'axios';
 import { Item, RootStackParamList } from '../types';
+import { COLORS, SHADOWS } from '../constants/theme';
+import { Ionicons } from '@expo/vector-icons';
 
 // API URL - Using 10.0.2.2 for Android Emulator to access localhost
 const API_URL = 'http://10.0.2.2:5000/items';
+
+const FILTERS = ["All Tasks", "In Progress", "Pending", "Done"];
 
 const HomeScreen = () => {
     const navigation = useNavigation<NavigationProp<RootStackParamList>>();
     const [items, setItems] = useState<Item[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [refreshing, setRefreshing] = useState<boolean>(false);
+    const [activeFilter, setActiveFilter] = useState("All Tasks");
 
     const fetchItems = async () => {
         try {
@@ -32,7 +37,6 @@ const HomeScreen = () => {
         fetchItems();
     }, []);
 
-    // Refresh when navigating back to screen (simple way to sync data)
     useEffect(() => {
         const unsubscribe = navigation.addListener('focus', () => {
             fetchItems();
@@ -40,77 +44,124 @@ const HomeScreen = () => {
         return unsubscribe;
     }, [navigation]);
 
-
     const onRefresh = () => {
         setRefreshing(true);
         fetchItems();
     };
 
-    const renderItem: ListRenderItem<Item> = ({ item }) => (
-        <TouchableOpacity
-            style={[styles.card, item.status === 'completed' && styles.cardCompleted]}
-            onPress={() => navigation.navigate('Detail', { itemId: item.id })}
-            activeOpacity={0.7}
-        >
-            <View style={styles.cardHeader}>
-                <Text style={[styles.cardTitle, item.status === 'completed' && styles.textCompleted]}>{item.title}</Text>
-                <StatusBadge status={item.status} />
-            </View>
-            <Text style={styles.cardInfo} numberOfLines={1}>
-                {item.vehicle_number} • Level {item.level} • Slot {item.slot}
-            </Text>
-            <Text style={styles.cardDescription} numberOfLines={2}>
-                {item.description}
-            </Text>
-            <View style={styles.cardFooter}>
-                <Text style={styles.timestamp}>
-                    {new Date(item.entry_time).toLocaleDateString()} • {new Date(item.entry_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </Text>
-            </View>
-        </TouchableOpacity>
-    );
+    const getFilteredItems = () => {
+        if (activeFilter === "All Tasks") return items;
+        if (activeFilter === "Done") return items.filter(i => i.status === "completed");
+        if (activeFilter === "In Progress") return items.filter(i => i.status === "active"); // Mapping 'active' to 'In Progress'
+        if (activeFilter === "Pending") return []; // No 'pending' status in backend yet, placeholder
+        return items;
+    };
 
-    const StatusBadge = ({ status }: { status: string }) => {
-        const isCompleted = status === 'completed';
+    const renderItem: ListRenderItem<Item> = ({ item }) => {
+        const isCompleted = item.status === 'completed';
+        const badgeStyle = isCompleted ? COLORS.badge.done : COLORS.badge.inProgress;
+        const statusText = isCompleted ? "Done" : "In Progress";
+
         return (
-            <View style={[styles.badge, isCompleted ? styles.badgeCompleted : styles.badgeActive]}>
-                <Text style={[styles.badgeText, isCompleted ? styles.badgeTextCompleted : styles.badgeTextActive]}>
-                    {status ? status.toUpperCase() : 'UNKNOWN'}
+            <TouchableOpacity
+                style={styles.card}
+                onPress={() => navigation.navigate('Detail', { itemId: item.id })}
+                activeOpacity={0.9}
+            >
+                <View style={styles.cardHeader}>
+                    <View style={[styles.badge, { backgroundColor: badgeStyle.bg }]}>
+                        <Text style={[styles.badgeText, { color: badgeStyle.text }]}>{statusText}</Text>
+                    </View>
+                    <TouchableOpacity>
+                        <Ionicons name="ellipsis-horizontal" size={20} color={COLORS.text.light} />
+                    </TouchableOpacity>
+                </View>
+
+                <Text style={styles.cardTitle} numberOfLines={2}>{item.title}</Text>
+
+                <Text style={styles.cardDescription} numberOfLines={2}>
+                    {item.description}
                 </Text>
-            </View>
+
+                <View style={styles.cardFooter}>
+                    <View style={styles.dateContainer}>
+                        <Ionicons name="calendar-outline" size={16} color={COLORS.text.secondary} />
+                        <Text style={styles.dateText}>
+                            {new Date(item.entry_time).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                        </Text>
+                    </View>
+
+                    {/* Mock Avatar for "Assigned To" visual */}
+                    <View style={styles.avatar}>
+                        <Text style={styles.avatarText}>{item.vehicle_number.charAt(0)}</Text>
+                    </View>
+                </View>
+            </TouchableOpacity>
         );
     };
 
     return (
         <SafeAreaView style={styles.container}>
-            <StatusBar barStyle="dark-content" backgroundColor="#f8f9fa" />
+            <StatusBar barStyle="dark-content" backgroundColor="#F2F2F7" />
+
+            {/* Header */}
             <View style={styles.header}>
-                <Text style={styles.headerTitle}>ValetDesk</Text>
-                <TouchableOpacity
-                    style={styles.addButton}
-                    onPress={() => navigation.navigate('Create')}
-                >
-                    <Text style={styles.addButtonText}>+</Text>
-                </TouchableOpacity>
+                <Text style={styles.dateHeader}>
+                    {new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' }).toUpperCase()}
+                </Text>
+                <View style={styles.titleRow}>
+                    <Text style={styles.headerTitle}>My Tasks</Text>
+                    <TouchableOpacity
+                        style={styles.addButton}
+                        onPress={() => navigation.navigate('Create')}
+                    >
+                        <Ionicons name="add" size={24} color="#FFF" />
+                    </TouchableOpacity>
+                </View>
+            </View>
+
+            {/* Filter Tabs */}
+            <View style={styles.filterContainer}>
+                <FlatList
+                    horizontal
+                    data={FILTERS}
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={{ paddingHorizontal: 20 }}
+                    keyExtractor={item => item}
+                    renderItem={({ item }) => (
+                        <TouchableOpacity
+                            style={[
+                                styles.filterTab,
+                                activeFilter === item && styles.filterTabActive
+                            ]}
+                            onPress={() => setActiveFilter(item)}
+                        >
+                            <Text style={[
+                                styles.filterText,
+                                activeFilter === item && styles.filterTextActive
+                            ]}>{item}</Text>
+                        </TouchableOpacity>
+                    )}
+                />
             </View>
 
             {loading ? (
                 <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color="#007bff" />
+                    <ActivityIndicator size="large" color={COLORS.primary} />
                 </View>
             ) : (
                 <FlatList
-                    data={items}
+                    data={getFilteredItems()}
                     renderItem={renderItem}
                     keyExtractor={item => item.id}
                     contentContainerStyle={styles.listContent}
                     showsVerticalScrollIndicator={false}
                     refreshControl={
-                        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={["#007bff"]} />
+                        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />
                     }
                     ListEmptyComponent={
                         <View style={styles.emptyContainer}>
-                            <Text style={styles.emptyText}>No tickets found</Text>
+                            <Text style={styles.emptyText}>No filtered tasks found</Text>
                         </View>
                     }
                 />
@@ -122,42 +173,58 @@ const HomeScreen = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#f8f9fa',
+        backgroundColor: COLORS.background,
     },
     header: {
+        paddingHorizontal: 20,
+        paddingTop: 10,
+        paddingBottom: 10,
+    },
+    dateHeader: {
+        fontSize: 13,
+        color: COLORS.text.secondary,
+        fontWeight: '600',
+        marginBottom: 4,
+        letterSpacing: 0.5,
+    },
+    titleRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        paddingHorizontal: 20,
-        paddingVertical: 16,
-        backgroundColor: '#fff',
-        borderBottomWidth: 1,
-        borderBottomColor: '#f0f0f0',
     },
     headerTitle: {
-        fontSize: 24,
+        fontSize: 34,
         fontWeight: 'bold',
-        color: '#1a1a1a',
-        letterSpacing: -0.5,
+        color: COLORS.text.primary,
     },
     addButton: {
         width: 40,
         height: 40,
         borderRadius: 20,
-        backgroundColor: '#007bff',
+        backgroundColor: '#D1E3FF', // Light blue circle to match screenshot
         justifyContent: 'center',
         alignItems: 'center',
-        shadowColor: '#007bff',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 6,
-        elevation: 5,
     },
-    addButtonText: {
-        fontSize: 24,
+    filterContainer: {
+        paddingVertical: 10,
+        marginBottom: 10,
+    },
+    filterTab: {
+        paddingHorizontal: 20,
+        paddingVertical: 8,
+        borderRadius: 20,
+        backgroundColor: '#fff',
+        marginRight: 10,
+    },
+    filterTabActive: {
+        backgroundColor: COLORS.primary,
+    },
+    filterText: {
+        color: COLORS.text.secondary,
+        fontWeight: '600',
+    },
+    filterTextActive: {
         color: '#fff',
-        fontWeight: 'bold',
-        marginTop: -2,
     },
     loadingContainer: {
         flex: 1,
@@ -165,54 +232,40 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     listContent: {
-        padding: 16,
+        padding: 20,
     },
     card: {
-        backgroundColor: '#fff',
-        borderRadius: 16,
-        padding: 16,
+        backgroundColor: COLORS.card,
+        borderRadius: 24, // High radius as per screenshot
+        padding: 20,
         marginBottom: 16,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-        elevation: 2,
-        borderWidth: 1,
-        borderColor: '#f0f0f0',
-    },
-    cardCompleted: {
-        backgroundColor: '#f9f9f9',
-        borderColor: '#eee',
-        shadowOpacity: 0,
-        elevation: 0,
-    },
-    textCompleted: {
-        color: '#aaa',
-        textDecorationLine: 'line-through'
+        ...SHADOWS.card,
     },
     cardHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 8,
+        marginBottom: 12,
+    },
+    badge: {
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 8,
+    },
+    badgeText: {
+        fontSize: 12,
+        fontWeight: '700',
     },
     cardTitle: {
-        fontSize: 16,
-        fontWeight: '700',
-        color: '#1a1a1a',
-        flex: 1,
-        marginRight: 8,
-    },
-    cardInfo: {
-        fontSize: 13,
-        fontWeight: '600',
-        color: '#444',
-        marginBottom: 6,
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: COLORS.text.primary,
+        marginBottom: 8,
     },
     cardDescription: {
         fontSize: 14,
-        color: '#666',
-        marginBottom: 12,
+        color: COLORS.text.secondary,
+        marginBottom: 20,
         lineHeight: 20,
     },
     cardFooter: {
@@ -220,39 +273,35 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
     },
-    timestamp: {
-        fontSize: 12,
-        color: '#999',
+    dateContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    dateText: {
+        marginLeft: 6,
+        color: COLORS.text.secondary,
+        fontSize: 13,
         fontWeight: '500',
     },
-    badge: {
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: 6,
+    avatar: {
+        width: 28,
+        height: 28,
+        borderRadius: 14,
+        backgroundColor: '#FFD8B1', // Placeholder color
+        justifyContent: 'center',
+        alignItems: 'center',
     },
-    badgeActive: {
-        backgroundColor: '#e6f2ff',
-    },
-    badgeCompleted: {
-        backgroundColor: '#e6fffa',
-    },
-    badgeText: {
-        fontSize: 10,
-        fontWeight: '700',
-        letterSpacing: 0.5,
-    },
-    badgeTextActive: {
-        color: '#007bff',
-    },
-    badgeTextCompleted: {
-        color: '#00b894',
+    avatarText: {
+        fontSize: 12,
+        fontWeight: 'bold',
+        color: '#E65100',
     },
     emptyContainer: {
         alignItems: 'center',
         marginTop: 50,
     },
     emptyText: {
-        color: '#999',
+        color: COLORS.text.light,
         fontSize: 16,
     },
 });

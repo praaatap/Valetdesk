@@ -4,8 +4,9 @@ import { useNavigation, useRoute, RouteProp, NavigationProp } from '@react-navig
 import { SafeAreaView } from 'react-native-safe-area-context';
 import axios from 'axios';
 import { Item, RootStackParamList } from '../types';
+import { COLORS } from '../constants/theme';
+import { Ionicons } from '@expo/vector-icons';
 
-// API URL - Replace with your machine's IP
 const API_URL = 'http://10.0.2.2:5000/items';
 
 type DetailScreenRouteProp = RouteProp<RootStackParamList, 'Detail'>;
@@ -34,7 +35,6 @@ const DetailScreen = () => {
             }
         } catch (err) {
             setPageError("Failed to load details");
-            console.error(err);
         } finally {
             setLoading(false);
         }
@@ -42,8 +42,8 @@ const DetailScreen = () => {
 
     const handleDelete = () => {
         Alert.alert(
-            "Delete Ticket",
-            "Are you sure you want to delete this ticket? This action cannot be undone.",
+            "Delete Task",
+            "Are you sure?",
             [
                 { text: "Cancel", style: "cancel" },
                 {
@@ -55,8 +55,6 @@ const DetailScreen = () => {
                             const response = await axios.delete(`${API_URL}/${itemId}`);
                             if (response.data.success) {
                                 navigation.goBack();
-                            } else {
-                                Alert.alert("Error", "Failed to delete item");
                             }
                         } catch (error) {
                             Alert.alert("Error", "Could not delete item");
@@ -75,7 +73,6 @@ const DetailScreen = () => {
             const response = await axios.patch(`${API_URL}/${itemId}`, { status: 'completed' });
             if (response.data.success) {
                 setItem(prev => prev ? { ...prev, status: 'completed' } : null);
-                Alert.alert("Success", "Ticket marked as completed");
             }
         } catch (error) {
             Alert.alert("Error", "Could not update status");
@@ -87,7 +84,7 @@ const DetailScreen = () => {
     if (loading) {
         return (
             <View style={styles.centerContainer}>
-                <ActivityIndicator size="large" color="#007bff" />
+                <ActivityIndicator size="large" color={COLORS.primary} />
             </View>
         );
     }
@@ -96,91 +93,115 @@ const DetailScreen = () => {
         return (
             <View style={styles.centerContainer}>
                 <Text style={styles.errorText}>{pageError || "Unknown Error"}</Text>
-                <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-                    <Text style={styles.backButtonText}>Go Back</Text>
+                <TouchableOpacity onPress={() => navigation.goBack()}>
+                    <Text style={{ color: COLORS.primary }}>Go Back</Text>
                 </TouchableOpacity>
             </View>
         );
     }
 
+    const isCompleted = item.status === 'completed';
+
     return (
         <SafeAreaView style={styles.container}>
-            <ScrollView contentContainerStyle={styles.content}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.navBack}>
-                    <Text style={styles.navBackText}>← Back</Text>
+            {/* Header */}
+            <View style={styles.header}>
+                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+                    <Ionicons name="chevron-back" size={24} color={COLORS.primary} />
                 </TouchableOpacity>
+                <Text style={styles.headerTitle}>Task Details</Text>
+                <View style={{ width: 24 }} />
+            </View>
 
-                <View style={[styles.card, item.status === 'completed' && styles.cardDimmed]}>
-                    <View style={styles.header}>
-                        <Text style={styles.title}>{item.title}</Text>
-                        <View style={[styles.statusBadge, item.status === 'completed' ? styles.completed : styles.active]}>
-                            <Text style={[styles.statusText, item.status === 'completed' ? styles.completedText : styles.activeText]}>
-                                {item.status.toUpperCase()}
-                            </Text>
+            <ScrollView contentContainerStyle={styles.content}>
+
+                {/* Title Section */}
+                <Text style={styles.title}>{item.title}</Text>
+
+                <View style={styles.tagsRow}>
+                    {!isCompleted && (
+                        <View style={[styles.pill, { backgroundColor: '#FFEBEE' }]}>
+                            <Ionicons name="alert-circle" size={16} color={COLORS.danger} />
+                            <Text style={[styles.pillText, { color: COLORS.danger }]}>High Priority</Text>
                         </View>
-                    </View>
-
-                    <Text style={styles.label}>DESCRIPTION</Text>
-                    <Text style={styles.description}>{item.description}</Text>
-
-                    <View style={styles.divider} />
-
-                    <View style={styles.row}>
-                        <View style={styles.infoCol}>
-                            <Text style={styles.label}>VEHICLE NO.</Text>
-                            <Text style={styles.value}>{item.vehicle_number || "N/A"}</Text>
-                        </View>
-                        <View style={styles.infoCol}>
-                            <Text style={styles.label}>ENTRY TIME</Text>
-                            <Text style={styles.value}>
-                                {new Date(item.entry_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                            </Text>
-                        </View>
-                    </View>
-
-                    <View style={styles.row}>
-                        <View style={styles.infoCol}>
-                            <Text style={styles.label}>LEVEL</Text>
-                            <Text style={styles.value}>{item.level || "-"}</Text>
-                        </View>
-                        <View style={styles.infoCol}>
-                            <Text style={styles.label}>SLOT</Text>
-                            <Text style={styles.value}>{item.slot || "-"}</Text>
-                        </View>
-                    </View>
-                </View>
-
-                <View style={styles.actionsContainer}>
-                    {item.status === 'active' && (
-                        <TouchableOpacity
-                            style={[styles.actionButton, styles.completeButton]}
-                            onPress={handleMarkCompleted}
-                            disabled={actionLoading}
-                        >
-                            <Text style={styles.actionButtonText}>✓ Mark Completed</Text>
-                        </TouchableOpacity>
                     )}
-
-                    <TouchableOpacity
-                        style={[styles.actionButton, styles.deleteButton]}
-                        onPress={handleDelete}
-                        disabled={actionLoading}
-                    >
-                        <Text style={[styles.actionButtonText, styles.deleteText]}>Delete Ticket</Text>
-                    </TouchableOpacity>
+                    <View style={[styles.pill, { backgroundColor: '#E3F2FD' }]}>
+                        <Ionicons name="play-circle" size={16} color={COLORS.primary} />
+                        <Text style={[styles.pillText, { color: COLORS.primary }]}>
+                            {isCompleted ? "Done" : "In Progress"}
+                        </Text>
+                    </View>
                 </View>
 
-                <View style={styles.qrPlaceholder}>
-                    <Text style={styles.qrText}>ID: {item.id}</Text>
+                {/* Grid Info */}
+                <View style={styles.gridRow}>
+                    <View style={styles.gridItem}>
+                        <Ionicons name="calendar-outline" size={20} color={COLORS.text.secondary} style={styles.gridIcon} />
+                        <View>
+                            <Text style={styles.gridLabel}>DUE DATE</Text>
+                            <Text style={styles.gridValue}>
+                                {new Date(item.entry_time).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                            </Text>
+                        </View>
+                    </View>
+
+                    <View style={styles.gridItem}>
+                        <View style={styles.avatar}>
+                            <Text style={styles.avatarText}>{item.vehicle_number ? item.vehicle_number.charAt(0) : '?'}</Text>
+                        </View>
+                        <View>
+                            <Text style={styles.gridLabel}>ASSIGNED TO</Text>
+                            <Text style={styles.gridValue} numberOfLines={1}>{item.vehicle_number || "Unassigned"}</Text>
+                        </View>
+                    </View>
+                </View>
+
+                {/* Description */}
+                <View style={styles.descriptionHeader}>
+                    <Ionicons name="document-text" size={18} color={COLORS.primary} />
+                    <Text style={styles.sectionTitle}>Description</Text>
+                </View>
+
+                <View style={styles.descriptionBox}>
+                    <Text style={styles.descriptionText}>
+                        {item.description || "No description provided for this task."}
+                    </Text>
+
+                    <Text style={styles.contextText}>
+                        Needs investigation on the backend validation logic and potential regression testing for the auth module.
+                    </Text>
+                </View>
+
+                {/* Attachments Mock */}
+                <Text style={[styles.sectionTitle, { marginTop: 24, marginBottom: 12 }]}>ATTACHMENTS</Text>
+                <View style={styles.attachmentRow}>
+                    <View style={styles.attachmentCard}>
+                        <Ionicons name="image" size={24} color={COLORS.text.light} />
+                        <Text style={styles.attachmentText}>error_log.png</Text>
+                    </View>
+                    <View style={styles.attachmentCard}>
+                        <Ionicons name="document" size={24} color={COLORS.text.light} />
+                        <Text style={styles.attachmentText}>specs.pdf</Text>
+                    </View>
                 </View>
 
             </ScrollView>
 
-            {actionLoading && (
-                <View style={styles.loadingOverlay}>
-                    <ActivityIndicator size="large" color="#fff" />
-                </View>
-            )}
+            {/* Bottom Floating Bar */}
+            <View style={styles.bottomBar}>
+                <TouchableOpacity style={styles.editButton} onPress={handleDelete}>
+                    <Text style={styles.editButtonText}>Delete</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                    style={[styles.completeButton, isCompleted && { backgroundColor: COLORS.success }]}
+                    onPress={handleMarkCompleted}
+                    disabled={isCompleted}
+                >
+                    <Ionicons name="checkmark-circle" size={20} color="#fff" style={{ marginRight: 6 }} />
+                    <Text style={styles.completeButtonText}>{isCompleted ? "Completed" : "Mark Complete"}</Text>
+                </TouchableOpacity>
+            </View>
+
         </SafeAreaView>
     );
 };
@@ -188,162 +209,186 @@ const DetailScreen = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#f8f9fa',
-    },
-    content: {
-        padding: 20,
+        backgroundColor: '#fff',
     },
     centerContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
     },
-    navBack: {
-        marginBottom: 20,
-    },
-    navBackText: {
-        fontSize: 16,
-        color: '#007bff',
-        fontWeight: '600',
-    },
-    card: {
-        backgroundColor: '#fff',
-        borderRadius: 20,
-        padding: 24,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 12,
-        elevation: 5,
-    },
-    cardDimmed: {
-        opacity: 0.8,
-    },
-    header: {
-        marginBottom: 20,
-    },
-    title: {
-        fontSize: 22,
-        fontWeight: 'bold',
-        color: '#1a1a1a',
+    errorText: {
+        color: COLORS.danger,
         marginBottom: 10,
     },
-    statusBadge: {
-        alignSelf: 'flex-start',
-        paddingHorizontal: 10,
-        paddingVertical: 5,
-        borderRadius: 8,
-    },
-    active: {
-        backgroundColor: '#e6f2ff',
-    },
-    completed: {
-        backgroundColor: '#e6fffa',
-    },
-    statusText: {
-        fontSize: 12,
-        fontWeight: 'bold',
-    },
-    activeText: {
-        color: '#007bff',
-    },
-    completedText: {
-        color: '#00b894',
-    },
-    label: {
-        fontSize: 11,
-        color: '#999',
-        fontWeight: '700',
-        marginBottom: 4,
-        letterSpacing: 0.5,
-    },
-    description: {
-        fontSize: 16,
-        color: '#444',
-        lineHeight: 24,
-        marginBottom: 20,
-    },
-    divider: {
-        height: 1,
-        backgroundColor: '#f0f0f0',
-        marginVertical: 20,
-    },
-    row: {
+    header: {
         flexDirection: 'row',
-        marginBottom: 20,
-    },
-    infoCol: {
-        flex: 1,
-    },
-    value: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: '#1a1a1a',
-    },
-    qrPlaceholder: {
-        marginTop: 30,
         alignItems: 'center',
-        justifyContent: 'center',
-        padding: 20,
-        borderWidth: 2,
-        borderColor: '#e0e0e0',
-        borderStyle: 'dashed',
-        borderRadius: 12,
-    },
-    qrText: {
-        color: '#aaa',
-        fontFamily: 'monospace',
-    },
-    errorText: {
-        fontSize: 16,
-        color: '#dc3545',
-        marginBottom: 16,
+        justifyContent: 'space-between',
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: '#F0F0F0',
     },
     backButton: {
-        padding: 10,
-        backgroundColor: '#007bff',
-        borderRadius: 8,
+        padding: 4,
     },
-    backButtonText: {
-        color: 'white',
-        fontWeight: '600',
+    headerTitle: {
+        fontSize: 17,
+        fontWeight: '700',
     },
-    actionsContainer: {
-        marginTop: 24,
+    content: {
+        padding: 24,
+        paddingBottom: 100,
+    },
+    title: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        color: COLORS.text.primary,
+        marginBottom: 16,
+    },
+    tagsRow: {
+        flexDirection: 'row',
+        marginBottom: 24,
         gap: 12,
     },
-    actionButton: {
-        paddingVertical: 16,
+    pill: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 8,
+        gap: 6,
+    },
+    pillText: {
+        fontSize: 13,
+        fontWeight: '600',
+    },
+    gridRow: {
+        flexDirection: 'row',
+        gap: 16,
+        marginBottom: 30,
+    },
+    gridItem: {
+        flex: 1,
+        backgroundColor: '#F9FAFB',
+        padding: 16,
+        borderRadius: 12,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        borderWidth: 1,
+        borderColor: '#F0F0F0',
+    },
+    gridIcon: {
+        opacity: 0.6,
+    },
+    gridLabel: {
+        fontSize: 11,
+        color: COLORS.text.secondary,
+        fontWeight: '700',
+        marginBottom: 2,
+        letterSpacing: 0.5,
+    },
+    gridValue: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: COLORS.text.primary,
+    },
+    avatar: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        backgroundColor: COLORS.primary,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    avatarText: {
+        color: '#fff',
+        fontWeight: 'bold',
+    },
+    descriptionHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 12,
+        gap: 8,
+    },
+    sectionTitle: {
+        fontSize: 16,
+        fontWeight: '700',
+        color: COLORS.text.primary,
+    },
+    descriptionBox: {
+        backgroundColor: '#F9FAFB',
+        padding: 20,
+        borderRadius: 12,
+    },
+    descriptionText: {
+        color: COLORS.text.primary,
+        lineHeight: 22,
+        fontSize: 15,
+        marginBottom: 16,
+    },
+    contextText: {
+        color: COLORS.text.secondary,
+        lineHeight: 20,
+        fontSize: 14,
+    },
+    attachmentRow: {
+        flexDirection: 'row',
+        gap: 16,
+    },
+    attachmentCard: {
+        width: 100,
+        height: 100,
+        backgroundColor: '#F9FAFB',
+        borderRadius: 12,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#E5E5E5',
+    },
+    attachmentText: {
+        fontSize: 10,
+        marginTop: 8,
+        color: COLORS.text.secondary,
+    },
+    bottomBar: {
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        backgroundColor: '#fff',
+        flexDirection: 'row',
+        padding: 16,
+        borderTopWidth: 1,
+        borderTopColor: '#F0F0F0',
+        gap: 16,
+    },
+    editButton: {
+        flex: 1,
+        backgroundColor: '#F5F5F5',
+        paddingVertical: 14,
         borderRadius: 12,
         alignItems: 'center',
-        justifyContent: 'center',
+    },
+    editButtonText: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: COLORS.text.primary,
     },
     completeButton: {
-        backgroundColor: '#00b894',
-        shadowColor: '#00b894',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.2,
-        shadowRadius: 8,
-        elevation: 3,
-    },
-    deleteButton: {
-        backgroundColor: '#fff',
-        borderWidth: 1,
-        borderColor: '#ffdddd',
-    },
-    actionButtonText: {
-        fontWeight: '600',
-        fontSize: 16,
-        color: '#fff',
-    },
-    deleteText: {
-        color: '#ff4444',
-    },
-    loadingOverlay: {
-        ...StyleSheet.absoluteFillObject,
-        backgroundColor: 'rgba(0,0,0,0.3)',
-        justifyContent: 'center',
+        flex: 2,
+        backgroundColor: COLORS.primary,
+        paddingVertical: 14,
+        borderRadius: 12,
         alignItems: 'center',
+        flexDirection: 'row',
+        justifyContent: 'center',
+    },
+    completeButtonText: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#fff',
     }
 });
 
