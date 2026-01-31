@@ -14,10 +14,13 @@ from typing import List, Dict, Any, Optional
 app = Flask(__name__)
 CORS(app)
 
-DB_NAME = "valetdesk.db"
+DB_DIR = os.getenv('DB_DIR', '.')
+DB_NAME = os.path.join(DB_DIR, "valetdesk.db")
 
 def init_db():
     """Initialize the SQLite database"""
+    if DB_DIR != '.':
+        os.makedirs(DB_DIR, exist_ok=True)
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
     cursor.execute('''

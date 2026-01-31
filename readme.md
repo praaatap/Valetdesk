@@ -25,6 +25,12 @@ A full-stack mobile application for managing parking tickets/valet services. Bui
 
 ### 1. Backend Setup
 
+**Option A: Using Docker (Recommended)**
+```bash
+docker-compose up --build
+```
+
+**Option B: Manual Setup**
 ```bash
 cd backend
 python -m venv venv
