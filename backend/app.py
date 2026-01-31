@@ -29,6 +29,7 @@ def init_db():
             slot TEXT,
             level TEXT,
             entry_time TEXT,
+            due_date TEXT,
             status TEXT
         )
     ''')
@@ -102,8 +103,8 @@ def create_item() -> tuple[Response, int]:
         
         conn = get_db_connection()
         conn.execute('''
-            INSERT INTO items (id, title, description, vehicle_number, slot, level, entry_time, status)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO items (id, title, description, vehicle_number, slot, level, entry_time, due_date, status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', (
             new_id,
             str(data.get('title')),
@@ -112,6 +113,7 @@ def create_item() -> tuple[Response, int]:
             str(data.get('slot', '')),
             str(data.get('level', '')),
             entry_time,
+            str(data.get('due_date', '')),
             "active"
         ))
         conn.commit()
@@ -120,7 +122,7 @@ def create_item() -> tuple[Response, int]:
         return jsonify({
             "success": True,
             "message": "Task created successfully",
-            "data": { "id": new_id } # Simplification, client usually re-fetches
+            "data": { "id": new_id }
         }), 201
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
@@ -185,7 +187,7 @@ def update_item_status(item_id: str) -> tuple[Response, int]:
 def health_check() -> tuple[Response, int]:
     return jsonify({
         "status": "healthy",
-        "service": "ValetDesk API (SQLite)"
+        "service": "ValetDesk API (SQLite + DueDate)"
     }), 200
 
 
