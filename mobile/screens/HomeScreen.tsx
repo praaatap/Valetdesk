@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, StatusBar, RefreshControl, ListRenderItem, Image } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, StatusBar, RefreshControl, ListRenderItem, Image, TextInput } from 'react-native';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import axios from 'axios';
@@ -18,6 +18,7 @@ const HomeScreen = () => {
     const [loading, setLoading] = useState<boolean>(true);
     const [refreshing, setRefreshing] = useState<boolean>(false);
     const [activeFilter, setActiveFilter] = useState("All Tasks");
+    const [searchQuery, setSearchQuery] = useState("");
 
     const fetchItems = async () => {
         try {
@@ -50,11 +51,24 @@ const HomeScreen = () => {
     };
 
     const getFilteredItems = () => {
-        if (activeFilter === "All Tasks") return items;
-        if (activeFilter === "Done") return items.filter(i => i.status === "completed");
-        if (activeFilter === "In Progress") return items.filter(i => i.status === "active"); // Mapping 'active' to 'In Progress'
-        if (activeFilter === "Pending") return []; // No 'pending' status in backend yet, placeholder
-        return items;
+        let filtered = items;
+
+        // 1. Text Search Filter
+        if (searchQuery) {
+            const lowerQuery = searchQuery.toLowerCase();
+            filtered = filtered.filter(item =>
+                item.title.toLowerCase().includes(lowerQuery) ||
+                item.vehicle_number?.toLowerCase().includes(lowerQuery)
+            );
+        }
+
+        // 2. Tab Filter
+        if (activeFilter === "All Tasks") return filtered;
+        if (activeFilter === "Done") return filtered.filter(i => i.status === "completed");
+        if (activeFilter === "In Progress") return filtered.filter(i => i.status === "active");
+        if (activeFilter === "Pending") return [];
+
+        return filtered;
     };
 
     const renderItem: ListRenderItem<Item> = ({ item }) => {
@@ -91,9 +105,8 @@ const HomeScreen = () => {
                         </Text>
                     </View>
 
-                    {/* Mock Avatar for "Assigned To" visual */}
                     <View style={styles.avatar}>
-                        <Text style={styles.avatarText}>{item.vehicle_number.charAt(0)}</Text>
+                        <Text style={styles.avatarText}>{item.vehicle_number ? item.vehicle_number.charAt(0) : '?'}</Text>
                     </View>
                 </View>
             </TouchableOpacity>
@@ -118,6 +131,19 @@ const HomeScreen = () => {
                         <Ionicons name="add" size={24} color="#FFF" />
                     </TouchableOpacity>
                 </View>
+            </View>
+
+            {/* Search Bar */}
+            <View style={styles.searchContainer}>
+                <Ionicons name="search" size={20} color="#999" style={styles.searchIcon} />
+                <TextInput
+                    style={styles.searchInput}
+                    placeholder="Search tasks..."
+                    value={searchQuery}
+                    onChangeText={setSearchQuery}
+                    placeholderTextColor="#999"
+                    clearButtonMode="while-editing"
+                />
             </View>
 
             {/* Filter Tabs */}
@@ -155,6 +181,7 @@ const HomeScreen = () => {
                     renderItem={renderItem}
                     keyExtractor={item => item.id}
                     contentContainerStyle={styles.listContent}
+                    keyboardShouldPersistTaps="handled"
                     showsVerticalScrollIndicator={false}
                     refreshControl={
                         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />
@@ -201,13 +228,38 @@ const styles = StyleSheet.create({
         width: 40,
         height: 40,
         borderRadius: 20,
-        backgroundColor: '#D1E3FF', // Light blue circle to match screenshot
+        backgroundColor: '#D1E3FF',
         justifyContent: 'center',
         alignItems: 'center',
     },
+    searchContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#fff',
+        marginHorizontal: 20,
+        marginTop: 10,
+        marginBottom: 10,
+        borderRadius: 12,
+        paddingHorizontal: 12,
+        height: 48,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 2,
+        elevation: 2,
+    },
+    searchIcon: {
+        marginRight: 8,
+    },
+    searchInput: {
+        flex: 1,
+        fontSize: 16,
+        color: COLORS.text.primary,
+        height: '100%',
+    },
     filterContainer: {
         paddingVertical: 10,
-        marginBottom: 10,
+        marginBottom: 4,
     },
     filterTab: {
         paddingHorizontal: 20,
@@ -233,10 +285,11 @@ const styles = StyleSheet.create({
     },
     listContent: {
         padding: 20,
+        paddingTop: 0,
     },
     card: {
         backgroundColor: COLORS.card,
-        borderRadius: 24, // High radius as per screenshot
+        borderRadius: 24,
         padding: 20,
         marginBottom: 16,
         ...SHADOWS.card,
@@ -287,7 +340,7 @@ const styles = StyleSheet.create({
         width: 28,
         height: 28,
         borderRadius: 14,
-        backgroundColor: '#FFD8B1', // Placeholder color
+        backgroundColor: '#FFD8B1',
         justifyContent: 'center',
         alignItems: 'center',
     },
