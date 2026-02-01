@@ -7,7 +7,9 @@ import { Item, RootStackParamList } from '../types';
 import { COLORS } from '../constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 
-const API_URL = 'http://10.0.2.2:5000/items';
+import { ITEMS_URL } from '../constants/api';
+
+const API_URL = ITEMS_URL;
 
 type DetailScreenRouteProp = RouteProp<RootStackParamList, 'Detail'>;
 

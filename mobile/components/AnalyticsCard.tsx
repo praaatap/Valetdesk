@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { COLORS, SHADOWS } from '../constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -12,39 +12,50 @@ type AnalyticsCardProps = {
 const AnalyticsCard = ({ total, pending, done }: AnalyticsCardProps) => {
     return (
         <View style={styles.container}>
-            <Text style={styles.header}>Overview</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+            <View style={styles.headerRow}>
+                <Text style={styles.header}>Overview</Text>
+                <TouchableOpacity>
+                    <Text style={styles.seeAll}>Stats</Text>
+                </TouchableOpacity>
+            </View>
+            <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.scrollContent}
+                decelerationRate="fast"
+                snapToInterval={160}
+            >
+
+                {/* Total Card */}
+                <View style={[styles.card, { backgroundColor: COLORS.primary }]}>
+                    <View style={[styles.iconCircle, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
+                        <Ionicons name="grid" size={18} color="#fff" />
+                    </View>
+                    <View>
+                        <Text style={[styles.value, { color: '#fff' }]}>{total}</Text>
+                        <Text style={[styles.label, { color: 'rgba(255,255,255,0.8)' }]}>Total</Text>
+                    </View>
+                </View>
 
                 {/* Pending Card */}
-                <View style={[styles.card, styles.cardPending]}>
-                    <View style={styles.iconCircle}>
-                        <Ionicons name="time" size={20} color="#FF9500" />
+                <View style={styles.card}>
+                    <View style={[styles.iconCircle, { backgroundColor: COLORS.badge.pending.bg }]}>
+                        <Ionicons name="time" size={18} color={COLORS.badge.pending.text} />
                     </View>
                     <View>
                         <Text style={styles.value}>{pending}</Text>
-                        <Text style={styles.label}>Pending</Text>
+                        <Text style={styles.label}>Active</Text>
                     </View>
                 </View>
 
                 {/* Done Card */}
-                <View style={[styles.card, styles.cardDone]}>
-                    <View style={[styles.iconCircle, { backgroundColor: '#E8FAEF' }]}>
-                        <Ionicons name="checkmark-circle" size={20} color="#34C759" />
+                <View style={styles.card}>
+                    <View style={[styles.iconCircle, { backgroundColor: COLORS.badge.done.bg }]}>
+                        <Ionicons name="checkmark-circle" size={18} color={COLORS.badge.done.text} />
                     </View>
                     <View>
                         <Text style={styles.value}>{done}</Text>
-                        <Text style={styles.label}>Completed</Text>
-                    </View>
-                </View>
-
-                {/* Total Card */}
-                <View style={[styles.card, styles.cardTotal]}>
-                    <View style={[styles.iconCircle, { backgroundColor: '#E3F2FD' }]}>
-                        <Ionicons name="grid" size={20} color="#007AFF" />
-                    </View>
-                    <View>
-                        <Text style={styles.value}>{total}</Text>
-                        <Text style={styles.label}>Total Tasks</Text>
+                        <Text style={styles.label}>Done</Text>
                     </View>
                 </View>
 
@@ -55,61 +66,60 @@ const AnalyticsCard = ({ total, pending, done }: AnalyticsCardProps) => {
 
 const styles = StyleSheet.create({
     container: {
-        marginBottom: 16,
+        marginBottom: 20,
+        marginTop: 10,
     },
-    header: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: COLORS.text.primary,
+    headerRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
         paddingHorizontal: 20,
         marginBottom: 12,
+    },
+    header: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: COLORS.text.primary,
+        letterSpacing: -0.5,
+    },
+    seeAll: {
+        fontSize: 14,
+        color: COLORS.primary,
+        fontWeight: '600',
     },
     scrollContent: {
         paddingHorizontal: 20,
         gap: 12,
+        paddingBottom: 4, // Space for shadow
     },
     card: {
-        flexDirection: 'row',
-        alignItems: 'center',
         backgroundColor: '#fff',
-        borderRadius: 16,
-        padding: 12,
-        paddingRight: 24,
+        borderRadius: 20,
+        padding: 16,
+        paddingRight: 20,
         gap: 12,
-        borderWidth: 1,
-        borderColor: '#f0f0f0',
         minWidth: 140,
         ...SHADOWS.card,
-    },
-    cardPending: {
-        borderLeftWidth: 4,
-        borderLeftColor: '#FF9500',
-    },
-    cardDone: {
-        borderLeftWidth: 4,
-        borderLeftColor: '#34C759',
-    },
-    cardTotal: {
-        borderLeftWidth: 4,
-        borderLeftColor: '#007AFF',
+        borderWidth: 1,
+        borderColor: 'rgba(0,0,0,0.02)',
     },
     iconCircle: {
         width: 36,
         height: 36,
-        borderRadius: 18,
-        backgroundColor: '#FFF8E6',
+        borderRadius: 12,
         justifyContent: 'center',
         alignItems: 'center',
     },
     value: {
-        fontSize: 18,
+        fontSize: 22,
         fontWeight: 'bold',
         color: COLORS.text.primary,
     },
     label: {
-        fontSize: 12,
+        fontSize: 13,
         color: COLORS.text.secondary,
         fontWeight: '600',
+        marginTop: -2,
     },
 });
 

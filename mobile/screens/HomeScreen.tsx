@@ -8,10 +8,11 @@ import { COLORS, SHADOWS } from '../constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import AnalyticsCard from '../components/AnalyticsCard';
 
-// API URL - Using 10.0.2.2 for Android Emulator to access localhost
-const API_URL = 'http://10.0.2.2:5000/items';
+import { ITEMS_URL } from '../constants/api';
 
-const FILTERS = ["All Tasks", "In Progress", "Pending", "Done"];
+const API_URL = ITEMS_URL;
+
+const FILTERS = ["All Tasks", "Active", "Completed"];
 
 const HomeScreen = () => {
     const navigation = useNavigation<NavigationProp<RootStackParamList>>();
@@ -68,9 +69,8 @@ const HomeScreen = () => {
         }
 
         if (activeFilter === "All Tasks") return filtered;
-        if (activeFilter === "Done") return filtered.filter(i => i.status === "completed");
-        if (activeFilter === "In Progress") return filtered.filter(i => i.status === "active");
-        if (activeFilter === "Pending") return [];
+        if (activeFilter === "Completed") return filtered.filter(i => i.status === "completed");
+        if (activeFilter === "Active") return filtered.filter(i => i.status === "active");
 
         return filtered;
     };
@@ -123,42 +123,64 @@ const HomeScreen = () => {
 
     return (
         <SafeAreaView style={styles.container}>
-            <StatusBar barStyle="dark-content" backgroundColor="#F2F2F7" />
+            <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} />
 
-            {/* Header */}
-            <View style={styles.header}>
-                <Text style={styles.dateHeader}>
-                    {new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' }).toUpperCase()}
-                </Text>
-                <View style={styles.titleRow}>
-                    <Text style={styles.headerTitle}>My Tasks</Text>
-                    <TouchableOpacity
-                        style={styles.addButton}
-                        onPress={() => navigation.navigate('Create')}
-                    >
-                        <Ionicons name="add" size={24} color="#FFF" />
-                    </TouchableOpacity>
+            {/* Hero Section */}
+            <View style={styles.heroContainer}>
+                <View style={styles.heroContent}>
+                    <View style={styles.heroLeft}>
+                        <Text style={styles.welcomeText}>Welcome back, Guest</Text>
+                        <Text style={styles.heroTitle}>Manage Your{"\n"}Daily Valet</Text>
+                        <View style={styles.heroBadge}>
+                            <Ionicons name="flash" size={12} color="#FFF" />
+                            <Text style={styles.heroBadgeText}>Pro Dashboard</Text>
+                        </View>
+                    </View>
+
+                    <View style={styles.heroRight}>
+                        <View style={styles.progressWidget}>
+                            <View style={styles.progressInfo}>
+                                <Text style={styles.progressValue}>{totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0}%</Text>
+                                <Text style={styles.progressLabel}>Done</Text>
+                            </View>
+                            <TouchableOpacity style={styles.miniProfile}>
+                                <Image
+                                    source={{ uri: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80' }}
+                                    style={styles.profileImage}
+                                />
+                            </TouchableOpacity>
+                        </View>
+                    </View>
                 </View>
             </View>
 
             <FlatList
                 ListHeaderComponent={
                     <>
+                        {/* Search & Actions Bar */}
+                        <View style={styles.actionRow}>
+                            <View style={styles.searchContainer}>
+                                <Ionicons name="search" size={20} color="#999" style={styles.searchIcon} />
+                                <TextInput
+                                    style={styles.searchInput}
+                                    placeholder="Search tasks..."
+                                    value={searchQuery}
+                                    onChangeText={setSearchQuery}
+                                    placeholderTextColor="#999"
+                                    clearButtonMode="while-editing"
+                                />
+                            </View>
+                            <TouchableOpacity
+                                style={styles.addButton}
+                                onPress={() => navigation.navigate('Create')}
+                                activeOpacity={0.8}
+                            >
+                                <Ionicons name="add" size={28} color={COLORS.primary} />
+                            </TouchableOpacity>
+                        </View>
+
                         {/* Analytics Dashboard */}
                         <AnalyticsCard total={totalTasks} pending={pendingTasks} done={completedTasks} />
-
-                        {/* Search Bar */}
-                        <View style={styles.searchContainer}>
-                            <Ionicons name="search" size={20} color="#999" style={styles.searchIcon} />
-                            <TextInput
-                                style={styles.searchInput}
-                                placeholder="Search tasks..."
-                                value={searchQuery}
-                                onChangeText={setSearchQuery}
-                                placeholderTextColor="#999"
-                                clearButtonMode="while-editing"
-                            />
-                        </View>
 
                         {/* Filter Tabs */}
                         <View style={styles.filterContainer}>
@@ -216,50 +238,124 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: COLORS.background,
     },
-    header: {
+    heroContainer: {
+        backgroundColor: COLORS.primary,
         paddingHorizontal: 20,
-        paddingTop: 10,
-        paddingBottom: 10,
+        paddingTop: 20,
+        paddingBottom: 40,
+        borderBottomLeftRadius: 32,
+        borderBottomRightRadius: 32,
+        ...SHADOWS.card,
+        shadowColor: COLORS.primary,
+        shadowOpacity: 0.4,
+        shadowRadius: 15,
     },
-    dateHeader: {
-        fontSize: 13,
-        color: COLORS.text.secondary,
-        fontWeight: '600',
-        marginBottom: 4,
-        letterSpacing: 0.5,
-    },
-    titleRow: {
+    heroContent: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
     },
-    headerTitle: {
-        fontSize: 34,
-        fontWeight: 'bold',
-        color: COLORS.text.primary,
+    heroLeft: {
+        flex: 1,
     },
-    addButton: {
-        width: 40,
-        height: 40,
+    welcomeText: {
+        fontSize: 14,
+        color: 'rgba(255,255,255,0.7)',
+        fontWeight: '600',
+        marginBottom: 4,
+    },
+    heroTitle: {
+        fontSize: 28,
+        fontWeight: '800',
+        color: '#FFF',
+        lineHeight: 34,
+        letterSpacing: -0.5,
+    },
+    heroBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(255,255,255,0.15)',
+        paddingHorizontal: 10,
+        paddingVertical: 4,
         borderRadius: 20,
-        backgroundColor: '#D1E3FF',
+        alignSelf: 'flex-start',
+        marginTop: 12,
+        gap: 6,
+    },
+    heroBadgeText: {
+        color: '#FFF',
+        fontSize: 11,
+        fontWeight: '700',
+        textTransform: 'uppercase',
+    },
+    heroRight: {
+        alignItems: 'center',
+    },
+    progressWidget: {
+        width: 100,
+        height: 100,
+        borderRadius: 50,
+        backgroundColor: 'rgba(255,255,255,0.1)',
+        borderWidth: 6,
+        borderColor: 'rgba(255,255,255,0.1)',
         justifyContent: 'center',
         alignItems: 'center',
     },
+    progressInfo: {
+        alignItems: 'center',
+    },
+    progressValue: {
+        color: '#FFF',
+        fontSize: 20,
+        fontWeight: 'bold',
+    },
+    progressLabel: {
+        color: 'rgba(255,255,255,0.6)',
+        fontSize: 10,
+        fontWeight: '700',
+    },
+    miniProfile: {
+        position: 'absolute',
+        bottom: -5,
+        right: -5,
+        width: 36,
+        height: 36,
+        borderRadius: 12,
+        backgroundColor: '#FFF',
+        padding: 2,
+        ...SHADOWS.card,
+    },
+    profileImage: {
+        width: '100%',
+        height: '100%',
+        borderRadius: 10,
+    },
+    actionRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 20,
+        gap: 12,
+        marginBottom: 10,
+        marginTop: -24, // Pull it into the hero area slightly
+    },
+    addButton: {
+        width: 48,
+        height: 48,
+        borderRadius: 16,
+        backgroundColor: '#FFF',
+        justifyContent: 'center',
+        alignItems: 'center',
+        ...SHADOWS.card,
+    },
     searchContainer: {
+        flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: '#fff',
-        marginHorizontal: 20,
-        marginBottom: 10,
-        borderRadius: 12,
-        paddingHorizontal: 12,
+        borderRadius: 16,
+        paddingHorizontal: 16,
         height: 48,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.05,
-        shadowRadius: 2,
-        elevation: 2,
+        ...SHADOWS.card,
     },
     searchIcon: {
         marginRight: 8,

@@ -1,4 +1,5 @@
 export const COLORS = {
+
   primary: '#007AFF', // Bright Blue
   secondary: '#5856D6',
   success: '#34C759', // Green
@@ -33,3 +34,10 @@ export const SHADOWS = {
     elevation: 3,
   }
 };
+
+export const Fonts = {
+  rounded: 'System', // Fallback to System if fonts aren't loaded
+  mono: 'SpaceMono',
+};
+
+export const Colors = COLORS;
